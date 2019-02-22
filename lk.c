@@ -1,5 +1,4 @@
 
-// LK, Library free twin pan file manager by Spartrekus
 
 //////////////////////////////////////////
 //////////////////////////////////////////
@@ -87,11 +86,19 @@ void nrunwith( char *cmdapp, char *filesource )
 
 void clear_screen()
 {
+    /*
+    ///define clrscr()		printf(ESC "[2J") //clear the screen, move to (1,1)
     int fooi;
     struct winsize w; // need ioctl and unistd 
     ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
     for ( fooi = 1 ; fooi <= w.ws_row ; fooi++ ) 
        printf( "\n" );
+    home();
+    */
+    int fooi;
+    struct winsize w; // need ioctl and unistd 
+    ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
+    clrscr();
     home();
 }
 
@@ -302,9 +309,26 @@ void printdir( int pyy, int fopxx, char *mydir , int panviewpr )
 
 int main( int argc, char *argv[])
 {
-    char fichier[PATH_MAX];
+
+
+    ////////////////////////////////////////////////////////
     char cwd[PATH_MAX];
+    char pathbefore[PATH_MAX];
+    strncpy( pathbefore , getcwd( cwd, PATH_MAX ) , PATH_MAX );
     char pathpan[5][PATH_MAX];
+    ////////////////////////////////////////////////////////
+    if ( argc == 2)
+    if ( strcmp( argv[1] , "" ) !=  0 )
+    if ( fexist( argv[1] ) ==  2 )
+    {
+          chdir( argv[ 1 ] );
+          strncpy( pathpan[ 1 ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
+          strncpy( pathpan[ 2 ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
+    }
+
+
+
+    ////////////////////////////////////////////////////////
     int viewpan[5];
     nexp_user_sel[1] = 1;
     nexp_user_sel[2] = 1;
@@ -349,11 +373,10 @@ int main( int argc, char *argv[])
        printf("%syellow\n", KYEL);
        printf( "PATH1:%s\n",  pathpan[ 1 ] );
        printf( "PATH2:%s\n", pathpan[ 2 ] );
-       return 0;
+       //return 0;
     }
     int ch ; 
     int gameover = 0;
-
     
 
     while ( gameover == 0 ) 
@@ -362,9 +385,9 @@ int main( int argc, char *argv[])
        disable_waiting_for_enter();
        clear_screen();
        ansigotoyx( 0, 0 );
-       printf( "| 1 |[%s]", getcwd( cwd, PATH_MAX) );
+       printf( "| 1 |[%s]", pathpan[ 1 ] );
        ansigotoyx( 0, cols/2 );
-       printf( "| 2 |[%s]", getcwd( cwd, PATH_MAX) );
+       printf( "| 2 |[%s]", pathpan[ 2 ] );
 
        chdir( pathpan[ 1 ] );
        if ( viewpan[ 1 ] == 1 ) 
@@ -380,6 +403,13 @@ int main( int argc, char *argv[])
        chdir( pathpan[ pansel ] );
        if (ch == 'q')            gameover = 1; 
        else if (ch ==  'Q')      gameover = 1;
+       else if ( ch == '~')      
+       {
+            chdir( pathpan[ pansel ] );
+            chdir( getenv( "HOME" ) );
+            nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0; 
+            strncpy( pathpan[ pansel ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
+       }
        else if ( ch == 'h')      
        {
             chdir( pathpan[ pansel ] );
@@ -394,6 +424,14 @@ int main( int argc, char *argv[])
             nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0; 
             strncpy( pathpan[ pansel ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
        }
+       else if ( ( ch == 'o') && ( pansel == 1 )   )
+       {
+            chdir( pathpan[ 1 ] );
+            chdir( nexp_user_fileselection );
+            nexp_user_sel[ 2 ] = 1; 
+            nexp_user_scrolly[ 2 ] = 0; 
+            strncpy( pathpan[ 2 ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
+       }
        else if ( ch == 'k')      nexp_user_sel[pansel]--;
        else if ( ch == 'j')      nexp_user_sel[pansel]++;
        else if ( ch == 'g')      { nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0; }
@@ -404,7 +442,7 @@ int main( int argc, char *argv[])
        else if ( ch == 't' )     printf("%syellow\n", KYEL);
        else if ( ch == 'r' )   {  enable_waiting_for_enter();  nrunwith(  " tcview ",  nexp_user_fileselection    );   }
        else if ( ch == 'v' )   {  enable_waiting_for_enter();  nrunwith(  " vim  ",  nexp_user_fileselection    );   }
-       else if ( ch == 'z' )   {  enable_waiting_for_enter();  nrunwith(  " vim  ",  nexp_user_fileselection    );   }
+       else if ( ch == 'z' )   {  enable_waiting_for_enter();  nrunwith(  " less  ",  nexp_user_fileselection    );   }
        else if ( ch == '$' )     nsystem( " sh  ");
        else if ( ch == '0' )
        {  viewpan[ 1 ] = 0;  viewpan[ 2 ] = 0; }
