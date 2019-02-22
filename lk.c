@@ -84,17 +84,9 @@ void nrunwith( char *cmdapp, char *filesource )
 }
 
 
+
 void clear_screen()
 {
-    /*
-    ///define clrscr()		printf(ESC "[2J") //clear the screen, move to (1,1)
-    int fooi;
-    struct winsize w; // need ioctl and unistd 
-    ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
-    for ( fooi = 1 ; fooi <= w.ws_row ; fooi++ ) 
-       printf( "\n" );
-    home();
-    */
     int fooi;
     struct winsize w; // need ioctl and unistd 
     ioctl( STDOUT_FILENO, TIOCGWINSZ, &w );
@@ -137,46 +129,6 @@ return fileordir;
 
 
 
-int  fiche = 0 ; 
-
-///////////////
-char* scan_line( char* buffer, int buffer_size) 
-{
-   char* p = buffer;
-   int count = 0;
-   do {
-       char c;
-       scanf("%c", &c); // scan a single character
-       // break on end of line, string terminating NUL, or end of file
-
-       if (c == '\r' || c == '\n' || c == 0 || c == EOF) 
-       {
-           *p = 0;
-           break;
-       }
-
-       *p++ = c; // add the valid character into the buffer
-   } while (count < buffer_size - 1);  // don't overrun the buffer
-   // ensure the string is null terminated
-   buffer[buffer_size - 1] = 0;
-   return buffer;
-}
-
-
-///////////////////////////////////////////
-void readfile( char *filesource )
-{
-   FILE *source; 
-   int ch ; 
-   source = fopen( filesource , "r");
-   if ( source == NULL ) { printf( "File not found.\n" ); } else {
-   while( ( ch = fgetc(source) ) != EOF )
-   {
-         printf( "%c", ch );
-   }
-   fclose(source);
-   }
-}
 
 
 
@@ -313,8 +265,6 @@ int main( int argc, char *argv[])
 
     ////////////////////////////////////////////////////////
     char cwd[PATH_MAX];
-    char pathbefore[PATH_MAX];
-    strncpy( pathbefore , getcwd( cwd, PATH_MAX ) , PATH_MAX );
     char pathpan[5][PATH_MAX];
     ////////////////////////////////////////////////////////
     if ( argc == 2)
@@ -357,24 +307,6 @@ int main( int argc, char *argv[])
     cols = w.ws_col ; 
 
 
-
-    ////////////////////////////////////////////////////////
-    if ( argc == 3)
-    if ( strcmp( argv[1] , "-f" ) ==  0 ) 
-    {
-       printf("%syellow\n", KYEL);
-       readfile( argv[ 2 ] );
-       return 0;
-    }
-   
-    ////////////////////////////////////////////////////////
-    if ( argc == 2)
-    {
-       printf("%syellow\n", KYEL);
-       printf( "PATH1:%s\n",  pathpan[ 1 ] );
-       printf( "PATH2:%s\n", pathpan[ 2 ] );
-       //return 0;
-    }
     int ch ; 
     int gameover = 0;
     
@@ -384,10 +316,18 @@ int main( int argc, char *argv[])
        strncpy( nexp_user_fileselection, "" , PATH_MAX );
        disable_waiting_for_enter();
        clear_screen();
+
        ansigotoyx( 0, 0 );
-       printf( "| 1 |[%s]", pathpan[ 1 ] );
+       if ( pansel == 1 )
+         printf( "|*1 |[%s]", pathpan[ 1 ] );
+       else 
+         printf( "| 1 |[%s]", pathpan[ 1 ] );
+
        ansigotoyx( 0, cols/2 );
-       printf( "| 2 |[%s]", pathpan[ 2 ] );
+       if ( pansel == 2 )
+         printf( "|*2 |[%s]", pathpan[ 2 ] );
+       else 
+         printf( "| 2 |[%s]", pathpan[ 2 ] );
 
        chdir( pathpan[ 1 ] );
        if ( viewpan[ 1 ] == 1 ) 
@@ -403,6 +343,14 @@ int main( int argc, char *argv[])
        chdir( pathpan[ pansel ] );
        if (ch == 'q')            gameover = 1; 
        else if (ch ==  'Q')      gameover = 1;
+       else if ( ch == 'w')      
+       {
+            chdir( pathpan[ pansel ] );
+            chdir( getenv( "HOME" ) );
+            chdir( "workspace" );
+            nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0; 
+            strncpy( pathpan[ pansel ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
+       }
        else if ( ch == '~')      
        {
             chdir( pathpan[ pansel ] );
@@ -432,30 +380,43 @@ int main( int argc, char *argv[])
             nexp_user_scrolly[ 2 ] = 0; 
             strncpy( pathpan[ 2 ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
        }
+       else if ( ( ch == 'o') && ( pansel == 2 )   )
+       {
+            chdir( pathpan[ 2 ] );
+            chdir( nexp_user_fileselection );
+            nexp_user_sel[ 1 ] = 1; 
+            nexp_user_scrolly[ 1 ] = 0; 
+            strncpy( pathpan[ 1 ] , getcwd( cwd, PATH_MAX ), PATH_MAX );
+       }
        else if ( ch == 'k')      nexp_user_sel[pansel]--;
        else if ( ch == 'j')      nexp_user_sel[pansel]++;
        else if ( ch == 'g')      { nexp_user_sel[pansel]=1; nexp_user_scrolly[pansel] = 0; }
        else if ( ch == 'u')      nexp_user_scrolly[pansel]-=4;
        else if ( ch == 'd')      nexp_user_scrolly[pansel]+=4;
        else if ( ch == 'n')      nexp_user_scrolly[pansel]+=4;
-       else if ( ch == 'T' )     printf("%syellow\n", KYEL);
+
        else if ( ch == 't' )     printf("%syellow\n", KYEL);
+
+
        else if ( ch == 'r' )   {  enable_waiting_for_enter();  nrunwith(  " tcview ",  nexp_user_fileselection    );   }
        else if ( ch == 'v' )   {  enable_waiting_for_enter();  nrunwith(  " vim  ",  nexp_user_fileselection    );   }
-       else if ( ch == 'z' )   {  enable_waiting_for_enter();  nrunwith(  " less  ",  nexp_user_fileselection    );   }
+
        else if ( ch == '$' )     nsystem( " sh  ");
-       else if ( ch == '0' )
-       {  viewpan[ 1 ] = 0;  viewpan[ 2 ] = 0; }
+
        else if ( ch == '1' )
        {  if ( viewpan[ 1 ] == 1 )   viewpan[ 1 ] = 0; else viewpan[ 1 ] = 1; }
        else if ( ch == '2' )
        { if ( viewpan[ 2 ] == 1 )    viewpan[ 2 ] = 0; else viewpan[ 2 ] = 1; }
+
        else if ( ch == 9 )
        {  if ( pansel == 1 )   pansel = 2 ; else pansel = 1; }
        else if ( ch == 'i' )
        {  if ( pansel == 1 )   pansel = 2 ; else pansel = 1; }
+
+
     }
 
+    enable_waiting_for_enter();
     printf( "\n" );
     printf( "Bye!\n" );
     return 0;
